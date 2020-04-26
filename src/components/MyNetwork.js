@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import Talk from 'talkjs';
 import { dummyUsers } from './Users';
 
 class MyNetwork extends Component {
@@ -13,6 +14,42 @@ class MyNetwork extends Component {
     this.state = {
       currentUser
     }
+  }
+
+  handleClick(userId) {
+  /* Retrieve the two users that will participate in the conversation */
+    const { currentUser } = this.state;
+    const user = dummyUsers.find(user => user.id === userId);
+
+    // Session initialization code
+    Talk.ready
+      .then(() => {
+        // Create the two users that will participate in the conversation
+        const me = new Talk.User(currentUser);
+        const other = new Talk.User(user);
+
+        // Create a talk session if it does not exist
+        if (!window.talkSession) {
+          window.talkSession = new Talk.Session({
+            appId: "t6XRwo0J",
+            me: me
+          });
+        }
+
+        // Get a conversation ID or create one
+        const conversationId = Talk.oneOnOneId(me, other);
+        const conversation = window.talkSession.getOrCreateConversation(conversationId);
+
+
+        // Set participants of the conversation
+        conversation.setParticipant(me);
+        conversation.setParticipant(other);
+
+        // Create and mount chatbox in container
+        this.chatbox = window.talkSession.createChatbox(conversation);
+        this.chatbox.mount(this.container);
+      })
+      .catch(e => console.error(e));
   }
 
   render() {
@@ -47,12 +84,16 @@ class MyNetwork extends Component {
                     <p>{user.info}</p>
                   </div>
                   <div className="user-action">
-                    <button>Mensagem</button>
+                    <button onClick={(userId) => this.handleClick(user.id)}>Mensagem</button>
                   </div>
                 </div>
               </li>
               )}
           </ul>
+
+          <div className="chatbox-container" ref={c => this.container = c}>
+            <div id="talkjs-container" style={{height: "300px"}}><i></i></div>
+          </div>
         </div>
       </div>
     )
